@@ -1,2 +1,3 @@
 # Ignore JS files as they are typescript compilation output.
 *.js
+node_modules/*
