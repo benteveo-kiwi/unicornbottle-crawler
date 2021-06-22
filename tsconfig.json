@@ -2,12 +2,12 @@
     "compilerOptions": {
         "module": "system",
         "outDir": "out/",
-        "noImplicitAny": true,
-        "removeComments": true,
-        "preserveConstEnums": true,
-        "sourceMap": true,
-        "strict": true
+        "strict": true,
+        "module": "commonjs",
+        "esModuleInterop": true,
+        "target": "es6",
+        "moduleResolution": "node",
+        "sourceMap": true
     },
-    "include": ["src/**/*", "src/*.ts"],
-    "exclude": ["node_modules", "**/*.spec.ts"]
+    "include": ["src/*.ts"]
 }
