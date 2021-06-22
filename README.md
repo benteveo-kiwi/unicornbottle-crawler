@@ -1,7 +1,7 @@
-# Crawler
+# Poller
 
-To compile, run:
+The poller regularly receives messages from the RabbitMQ queue and initiates the other process based on those instructions. To compile, run:
 
 ```
-npx tsc hello.ts && node hello.js
+npm run build && node out/poller.js
 ```
