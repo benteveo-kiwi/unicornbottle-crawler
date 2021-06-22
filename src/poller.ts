@@ -1,7 +1,5 @@
-function hello(person){
-    return "Hello, " + person;
-}
-let user = "World";
-const result = hello(user);
-console.log("Result", result)
+let user:string = "hello"
 
+user = 3
+
+console.log(user + 2)
