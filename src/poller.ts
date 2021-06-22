@@ -1,20 +1,32 @@
 import amqp from "amqplib/callback_api";
 
-amqp.connect('amqp://localhost', function(error0, connection) {
+let connCreds = {
+    protocol: 'amqp',
+    hostname: process.env.RABBIT_HOSTNAME,
+    port: 5672,
+    username: process.env.RABBIT_USERNAME,
+    password: process.env.RABBIT_PASSWORD
+}
+
+amqp.connect(connCreds, function(error0, connection) {
+
     if (error0) {
         throw error0;
     }
+
     connection.createChannel(function(error1, channel) {
         if (error1) {
             throw error1;
         }
-        var queue = 'task_queue';
+
+        var queue = 'crawl_tasks';
 
         channel.assertQueue(queue, {
             durable: true
         });
         channel.prefetch(1);
         console.log(" [*] Waiting for messages in %s. To exit press CTRL+C", queue);
+
         channel.consume(queue, function(msg) {
             if(!msg) {
                 console.log("Message was null!");
