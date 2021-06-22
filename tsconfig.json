@@ -1,13 +1,16 @@
 {
     "compilerOptions": {
-        "module": "system",
         "outDir": "out/",
-        "strict": true,
         "module": "commonjs",
         "esModuleInterop": true,
         "target": "es6",
         "moduleResolution": "node",
-        "sourceMap": true
+        "sourceMap": true,
+
+        "strict": true,
+        "noUnusedLocals": true,
+        "noImplicitReturns": true,
+        "forceConsistentCasingInFileNames": true
     },
     "include": ["src/*.ts"]
 }

@@ -5,6 +5,7 @@
     },
     "dependencies": {
         "@types/amqplib": "^0.8.0",
-        "amqplib": "^0.8.0"
+        "amqplib": "^0.8.0",
+        "winston": "^3.3.3"
     }
 }
