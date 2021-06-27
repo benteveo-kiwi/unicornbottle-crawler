@@ -1,19 +1,21 @@
 //import { getLogger } from "./logger";
-import puppeteer from 'puppeteer'
 
 //let logger = getLogger("poller")
 
-const url = process.argv[2];
-if (!url) {
-    throw "Please provide a URL as the first argument";
-}
+const { chromium } = require('playwright');
 
-async function run () {
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-    await page.goto(url);
-    await page.screenshot({path: 'screenshot.png'});
-    browser.close();
-}
-run();
+(async () => {
+  const browser = await chromium.launch();
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  // Log and continue all network requests
+  page.route('**', (route: import('playwright').Route) => {
+    console.log(route.request().url());
+    route.continue();
+  });
+
+  await page.goto('http://todomvc.com');
+  await browser.close();
+})();
 
