@@ -1,4 +1,4 @@
-import { CrawlerPage } from "./models/crawler_page";
+import { ClickLinksAction } from "./models/actions";
 import { chromium } from "playwright";
 import { getLogger } from "./logger";
 
@@ -12,14 +12,15 @@ logger.info("Connected successfully.");
     const page = await context.newPage();
 
     // Log and continue all network requests
-    page.route('**', (route: import('playwright').Route) => {
+    context.route('**', (route: import('playwright').Route) => {
         console.log(route.request().url());
         route.continue();
     });
 
-    const searchPage = new CrawlerPage(page);
-    await searchPage.navigate();
-    await searchPage.search('search query');
+    const action = new ClickLinksAction(page);
+    await action.perform()
+    
+    await browser.close()
 
 })();
 
