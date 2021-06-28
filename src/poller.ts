@@ -11,7 +11,6 @@ let connCreds = {
     password: process.env.RABBIT_PASSWORD
 }
 
-logger.info("Attempting to connect")
 amqp.connect(connCreds, function(error0, connection) {
     if (error0) {
         logger.error(error0)
