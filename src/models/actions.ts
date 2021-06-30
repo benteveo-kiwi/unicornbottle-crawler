@@ -46,11 +46,13 @@ export class ClickLinksAction extends Action {
         let links = await this.page.$$("a");
         let i = 0;
         for (let link of links) {
-            let href = await link.getAttribute("href");
-            i++;
             await link.click({force: true, button:"middle"});
+            i++;
+
+            if(i % 8 == 0 && i != 0) {
+                await this.page.waitForTimeout(1000); // Don't go too hard.
+            }
         }
-        console.log("total %d clicks", i);
     }
 
 }

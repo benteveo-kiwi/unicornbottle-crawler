@@ -6,14 +6,19 @@ let logger = getLogger("crawler");
 
 (async () => {
     logger.info("Launching browser.")
-    const browser = await chromium.launch();
-    const context = await browser.newContext();
+    const browser = await chromium.launch({
+        proxy: {
+            server: 'localhost:8080'
+        }
+    });
+
+    const context = await browser.newContext({ignoreHTTPSErrors: true});
 
     const page = await context.newPage();
 
     // Log all requests.
     context.route('**', (route: Route) => {
-        //console.log(route.request().url());
+        console.log(route.request().url());
         route.continue();
     });
 
@@ -31,15 +36,13 @@ let logger = getLogger("crawler");
 
     var nb = 0;
     context.on('page', async (page: Page) => {
-        await page.waitForLoadState("networkidle")
-        let url = page.url()
+        await page.waitForLoadState("load");
+        let url = page.url();
+
         if(url != "about:blank") {
-            nb++;
+            console.log("Url %s", url);
         }
-
-        console.log("nb so far %d", nb);
     });
-
 
     const action = new ClickLinksAction(page);
 
