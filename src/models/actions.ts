@@ -1,4 +1,7 @@
-import type { BrowserContext, Page } from 'playwright';
+import type { Route, Browser, BrowserContext, Page } from 'playwright';
+import { getLogger } from "../logger";
+
+let logger = getLogger("crawler");
 
 /**
  * This abstract class represents an action that the browser will perform. It
@@ -14,15 +17,53 @@ import type { BrowserContext, Page } from 'playwright';
  */
 abstract class Action {
 
-    readonly page: Page;
+    readonly browser: Browser;
+    context: BrowserContext | null;
+    page: Page | null;
+    startUrl: string | null;
 
     /**
      * Main constructor.
      *
-     * @param page - A playwright page as documented here: https://playwright.dev/docs/api/class-page
+     * @param browser - A Browser instance that will be used for the interactions.
+     * @see https://playwright.dev/docs/api/class-browser
      */
-    constructor(page: Page) {
-        this.page = page;
+    constructor(browser: Browser) {
+        this.browser = browser;
+        this.context = null;
+        this.page = null;
+        this.startUrl = null;
+    }
+
+    /**
+     * Performs basic init of a browser context and navigates to a page to
+     * begin processing actions against it.
+     *
+     * @param startUrl - The initial URL to perform this actions against.
+     */
+    async init(startUrl : string) {
+        this.context = await this.browser.newContext({ignoreHTTPSErrors: true});
+        this.page = await this.context.newPage();
+        this.startUrl = startUrl;
+
+        // Log all requests.
+        this.context.route('**', (route: Route) => {
+            //console.log(route.request().url());
+            route.continue();
+        });
+
+        // Prevent accidental navigation of the main frame.
+        this.page.route('**', (route: Route) => {
+            let req = route.request()
+            if (req.isNavigationRequest() && req.frame() === this.page!.mainFrame() && req.url() !== this.startUrl) {
+                logger.info("Attempted to navigate main frame, aborted.");
+                route.abort('aborted');
+            } else {
+                route.continue();
+            }
+        });
+
+        await this.page.goto(startUrl, {waitUntil: "networkidle"});
     }
 
     /**
@@ -40,19 +81,26 @@ abstract class Action {
 export class ClickLinksAction extends Action {
 
     /**
-     * Main entry point.
+     * Main entry point. We iterate through all <a> elements and middle click
+     * them. 
      */
     async perform() {
-        let links = await this.page.$$("a");
-        let i = 0;
-        for (let link of links) {
-            await link.click({force: true, button:"middle"});
-            i++;
 
-            if(i % 8 == 0 && i != 0) {
-                await this.page.waitForTimeout(1000); // Don't go too hard.
-            }
+        if(this.page == null || this.context == null) {
+            logger.error("Trying to perform action without initialization.");
+            return;
         }
+
+        let links = await this.page.$$("a");
+
+        for (let link of links) {
+            await Promise.all([
+                this.context.waitForEvent('page'),
+                link.click({force: true, button:"middle"})
+            ]);
+        }
+
+        console.log(this.context!.pages().length, links.length)
     }
 
 }
