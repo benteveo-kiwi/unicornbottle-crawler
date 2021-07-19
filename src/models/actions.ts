@@ -40,15 +40,23 @@ abstract class Action {
      * begin processing actions against it.
      *
      * @param startUrl - The initial URL to perform this actions against.
+     * @param target - The target guid.
      */
-    async init(startUrl : string) {
-        this.context = await this.browser.newContext({ignoreHTTPSErrors: true});
+    async init(startUrl : string, target : string) {
+        let contextOptions = {
+            ignoreHTTPSErrors: true,
+            extraHTTPHeaders: {
+                "X-UB-GUID": target
+            }
+        }
+
+        this.context = await this.browser.newContext(contextOptions);
         this.page = await this.context.newPage();
         this.startUrl = startUrl;
 
         // Log all requests.
         this.context.route('**', (route: Route) => {
-            //console.log(route.request().url());
+            console.log(route.request().url());
             route.continue();
         });
 

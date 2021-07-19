@@ -1,5 +1,6 @@
 import amqp from "amqplib/callback_api";
 import { getLogger } from "./logger";
+import { CrawlRequest, initCrawlJob } from './crawler';
 
 let logger = getLogger("poller")
 
@@ -10,6 +11,7 @@ let connCreds = {
     username: process.env.RABBIT_USERNAME,
     password: process.env.RABBIT_PASSWORD
 }
+
 
 amqp.connect(connCreds, function(error0, connection) {
     if (error0) {
@@ -32,23 +34,21 @@ amqp.connect(connCreds, function(error0, connection) {
         channel.prefetch(1);
         logger.info(`Waiting for messages in ${queue} queue. To exit press CTRL+C`);
 
-        channel.consume(queue, function(msg) {
+        channel.consume(queue, async function(msg) {
             if(!msg) {
                 logger.error("Message was null!");
                 return;
             }
 
-            var secs = msg.content.toString().split('.').length - 1;
+            logger.info("Received crawl job, starting." + msg.content.toString());
 
-            logger.info("Received " + msg.content.toString());
+            let crawl_request: CrawlRequest = JSON.parse(msg.content.toString());
+            await initCrawlJob(crawl_request);
 
-            setTimeout(function() {
-                logger.info("Done");
-                channel.ack(msg);
-            }, secs * 1000);
+            logger.info("Finished crawling")
 
         }, {
-            noAck: false
+            noAck: true
         });
     });
 });

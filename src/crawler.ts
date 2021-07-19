@@ -4,7 +4,12 @@ import { getLogger } from "./logger";
 
 let logger = getLogger("crawler");
 
-(async () => {
+export interface CrawlRequest {
+    url: string;
+    guid: string;
+}
+
+export async function initCrawlJob(crawl_request : CrawlRequest) {
     logger.info("Launching browser.")
     const browser = await chromium.launch({
         proxy: {
@@ -13,10 +18,9 @@ let logger = getLogger("crawler");
     });
 
     const action = new ClickLinksAction(browser);
-    await action.init("https://books.toscrape.com/");
+    await action.init(crawl_request.url, crawl_request.guid);
+
     await action.perform();
 
     browser.close();
-
-})();
-
+}
