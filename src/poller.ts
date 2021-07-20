@@ -2,7 +2,7 @@ import amqp from "amqplib/callback_api";
 import { getLogger } from "./logger";
 import { CrawlRequest, initCrawlJob } from './crawler';
 
-let logger = getLogger("poller")
+let logger = getLogger()
 
 let connCreds = {
     protocol: 'amqp',

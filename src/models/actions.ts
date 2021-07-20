@@ -1,7 +1,7 @@
 import type { Route, Browser, BrowserContext, Page } from 'playwright';
 import { getLogger } from "../logger";
 
-let logger = getLogger("crawler");
+let logger = getLogger();
 
 /**
  * This abstract class represents an action that the browser will perform. It

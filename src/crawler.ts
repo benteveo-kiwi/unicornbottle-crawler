@@ -2,7 +2,7 @@ import { ClickLinksAction } from "./models/actions";
 import { chromium, Page, Route } from "playwright";
 import { getLogger } from "./logger";
 
-let logger = getLogger("crawler");
+let logger = getLogger();
 
 export interface CrawlRequest {
     url: string;
