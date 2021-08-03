@@ -6,7 +6,7 @@ let logger = getLogger();
 
 export interface CrawlRequest {
     url: string;
-    guid: string;
+    target: string;
 }
 
 export async function initCrawlJob(crawl_request : CrawlRequest) {
@@ -18,7 +18,7 @@ export async function initCrawlJob(crawl_request : CrawlRequest) {
     });
 
     const action = new ClickLinksAction(browser);
-    await action.init(crawl_request.url, crawl_request.guid);
+    await action.init(crawl_request.url, crawl_request.target);
 
     await action.perform();
 

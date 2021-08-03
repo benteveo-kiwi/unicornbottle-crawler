@@ -46,9 +46,9 @@ amqp.connect(connCreds, function(error0, connection) {
             await initCrawlJob(crawl_request);
 
             logger.info("Finished crawling")
-
+            channel.ack(msg);
         }, {
-            noAck: true
+            noAck: false // Manual acknowledgement mode.
         });
     });
 });
