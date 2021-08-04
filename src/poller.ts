@@ -42,6 +42,7 @@ amqp.connect(connCreds, function(error0, connection) {
 
             logger.info("Received crawl job, starting." + msg.content.toString());
 
+            // JSON is not verified as JSON.parse returns Any.
             let crawl_request: CrawlRequest = JSON.parse(msg.content.toString());
             await initCrawlJob(crawl_request);
 

@@ -15,7 +15,7 @@ function getLogger() {
     }
     let instanceNb = process.argv[2] ? process.argv[2] : 1337;
     let filename = `/var/log/ub-crawler/crawler-${instanceNb}.log`;
-    console.log(filename);
+
     const logger = createLogger({
         level: 'info',
         format: format.combine(

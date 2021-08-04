@@ -44,7 +44,6 @@ abstract class Action {
      */
     async init(startUrl : string, target : string) {
         let contextOptions = {
-            ignoreHTTPSErrors: true,
             extraHTTPHeaders: {
                 "X-UB-GUID": target
             }

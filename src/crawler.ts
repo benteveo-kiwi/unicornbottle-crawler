@@ -17,10 +17,17 @@ export async function initCrawlJob(crawl_request : CrawlRequest) {
         }
     });
 
-    const action = new ClickLinksAction(browser);
-    await action.init(crawl_request.url, crawl_request.target);
+    logger.info(`${crawl_request.target} -> ${crawl_request.url}: Start`)
+    try {
+        const action = new ClickLinksAction(browser);
+        await action.init(crawl_request.url, crawl_request.target);
+        await action.perform();
+    } catch(err) {
+        logger.error(err);
+    }
 
-    await action.perform();
+    logger.info(`${crawl_request.target} -> ${crawl_request.url}: Done`)
 
     browser.close();
 }
+
