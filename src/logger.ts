@@ -17,7 +17,7 @@ function getLogger() {
     let filename = `/var/log/ub-crawler/crawler-${instanceNb}.log`;
 
     const logger = createLogger({
-        level: 'info',
+        level: 'debug',
         format: format.combine(
             format.errors({ stack: true }),
             format.timestamp({

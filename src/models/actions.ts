@@ -53,12 +53,6 @@ abstract class Action {
         this.page = await this.context.newPage();
         this.startUrl = startUrl;
 
-        // Log all requests.
-        this.context.route('**', (route: Route) => {
-            console.log(route.request().url());
-            route.continue();
-        });
-
         // Prevent accidental navigation of the main frame.
         this.page.route('**', (route: Route) => {
             let req = route.request()
@@ -99,15 +93,30 @@ export class ClickLinksAction extends Action {
         }
 
         let links = await this.page.$$("a");
+        this.context.on('page', this.newPageCallback);
+        logger.debug(`Middle clicking ${links.length} links`);
 
+        let nb = 0;
         for (let link of links) {
             await Promise.all([
                 this.context.waitForEvent('page'),
                 link.click({force: true, button:"middle"})
             ]);
+            if(nb % 10 === 0 && nb != 0) {
+                logger.debug(`Clicked ${nb} links.`);
+            }
+            nb++;
+        }
+    }
+
+    async newPageCallback(page:Page) {
+        try {
+            await page.waitForLoadState("domcontentloaded", {timeout: 5000});
+        } catch(err) {
+            // This happens when the browser context is closed.
         }
 
-        console.log(this.context!.pages().length, links.length)
+        page.close()
     }
 
 }
