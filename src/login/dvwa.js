@@ -29,7 +29,7 @@ const { chromium } = require('playwright');
   // assert.equal(page.url(), 'http://localhost/DVWA-2.0.1/index.php');
 
   // ---------------------
-  await context.storageState({ path: 'dvwa.storage' });
+  await context.storageState({ path: '/home/crawler/ub-crawler/src/login/dvwa.storage' });
   await context.close();
   await browser.close();
 })();

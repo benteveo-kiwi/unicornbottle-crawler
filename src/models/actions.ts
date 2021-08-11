@@ -41,13 +41,19 @@ abstract class Action {
      *
      * @param startUrl - The initial URL to perform this actions against.
      * @param target - The target guid.
+     * @param login_script - the login script ID for this crawl request. 
      */
-    async init(startUrl : string, target : string) {
+    async init(startUrl : string, target : string, login_script:string) {
+
+        if (!login_script.match(/^[0-9a-z_]+$/)) { 
+            throw new Error("Invalid login script");
+        }
+        
         let contextOptions = {
             extraHTTPHeaders: {
                 "X-UB-GUID": target
             },
-            storageState: "/home/crawler/ub-crawler/src/login/dvwa.storage"
+            storageState: `/home/crawler/ub-crawler/src/login/${login_script}.storage`
         }
 
         this.context = await this.browser.newContext(contextOptions);
