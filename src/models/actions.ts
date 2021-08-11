@@ -46,7 +46,8 @@ abstract class Action {
         let contextOptions = {
             extraHTTPHeaders: {
                 "X-UB-GUID": target
-            }
+            },
+            storageState: "/home/crawler/ub-crawler/src/login/dvwa.storage"
         }
 
         this.context = await this.browser.newContext(contextOptions);

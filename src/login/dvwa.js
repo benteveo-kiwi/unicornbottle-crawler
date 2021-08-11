@@ -10,7 +10,7 @@ const { chromium } = require('playwright');
   const page = await context.newPage();
 
   // Go to http://localhost/DVWA-2.0.1/login.php
-  await page.goto('http://localhost/DVWA-2.0.1/login.php');
+  await page.goto('http://unicornbottle-main/DVWA/login.php');
 
   // Click input[name="username"]
   await page.click('input[name="username"]');
