@@ -9,7 +9,7 @@ const { chromium } = require('playwright');
   // Open new page
   const page = await context.newPage();
 
-  // Go to http://localhost/DVWA-2.0.1/login.php
+  // Go to http://unicornbottle-main/DVWA/login.php
   await page.goto('http://unicornbottle-main/DVWA/login.php');
 
   // Click input[name="username"]
@@ -26,10 +26,10 @@ const { chromium } = require('playwright');
 
   // Click text=Login
   await page.click('text=Login');
-  // assert.equal(page.url(), 'http://localhost/DVWA-2.0.1/index.php');
+  // assert.equal(page.url(), 'http://unicornbottle-main/DVWA/index.php');
 
   // ---------------------
-  await context.storageState({ path: '/home/crawler/ub-crawler/src/login/dvwa.storage' });
+  await context.storageState({ path: '' + process.argv[2] });
   await context.close();
   await browser.close();
 })();

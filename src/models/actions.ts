@@ -15,7 +15,7 @@ let logger = getLogger();
  * Additionally, due to the architecture of the crawler the actions may be
  * called multiple times in the same URL.
  */
-abstract class Action {
+export abstract class Action {
 
     readonly browser: Browser;
     context: BrowserContext | null;
@@ -41,19 +41,14 @@ abstract class Action {
      *
      * @param startUrl - The initial URL to perform this actions against.
      * @param target - The target guid.
-     * @param login_script - the login script ID for this crawl request. 
+     * @param storageState - the login script ID for this crawl request. 
      */
-    async init(startUrl : string, target : string, login_script:string) {
-
-        if (!login_script.match(/^[0-9a-z_]+$/)) { 
-            throw new Error("Invalid login script");
-        }
-        
+    async init(startUrl : string, target : string, storageState: string|undefined) {
         let contextOptions = {
             extraHTTPHeaders: {
                 "X-UB-GUID": target
             },
-            storageState: `/home/crawler/ub-crawler/src/login/${login_script}.storage`
+            storageState: storageState
         }
 
         this.context = await this.browser.newContext(contextOptions);

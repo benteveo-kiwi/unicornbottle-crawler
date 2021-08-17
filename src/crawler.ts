@@ -1,6 +1,8 @@
-import { ClickLinksAction } from "./models/actions";
+import type { Browser } from 'playwright';
+import { ClickLinksAction, Action } from "./models/actions";
 import { chromium, Page, Route } from "playwright";
 import { getLogger } from "./logger";
+import { randomBytes } from "crypto";
 
 let logger = getLogger();
 
@@ -27,37 +29,101 @@ function execShellCommand(cmd:string) {
     });
 }
 
+/**
+ * Get a pseudorandom string.
+ */
+function randomString() {
+    return randomBytes(20).toString('hex');
+}
+
+/**
+ * This function executes the login script, which through convention will write
+ * the session storage data to the first argument passed.
+ *
+ * @param login_script the login script to execute. It can only contain
+ * alphanumeric and underscore characters.
+ * @return storageState as expected by playwright.
+ */
+async function login(login_script:string|undefined) {
+    if(login_script) {
+        if (!login_script.match(/^[0-9a-z_]+$/)) { 
+            logger.info(`Invalid login script ${login_script}`);
+            throw new Error("Invalid login script");
+        }
+
+        logger.debug("Executing login script.");
+        let sessionId = randomString();
+
+        let storageState = `/home/crawler/ub-crawler/src/login/${sessionId}.storage`;
+        await execShellCommand(`node /home/crawler/ub-crawler/src/login/${login_script}.js ${storageState}`);
+
+        logger.debug(`Done. Generated storageState ${storageState}.`);
+
+        return storageState;
+    }
+
+    return undefined;
+}
+
+/**
+ * Launches a particular action.
+ *
+ * Creates a new session if authentication is requested in the crawl request,
+ * and then forwards the execution to this individual `Action`.
+ *
+ * @param browser - a new playwright Browser instance.
+ * @param crawl_request - crawl request as received from RabbitMQ.
+ * @param action - An instantiated Action class, without `init` called.
+ */
+export async function launchAction(browser:Browser, crawl_request:CrawlRequest, action:Action) {
+    let storageState = await login(crawl_request.login_script);
+
+    try {
+        await action.init(crawl_request.url, crawl_request.target, storageState);
+        await action.perform();
+    } catch(err) {
+        logger.error(err);
+    }
+}
+
+/**
+ * Main entry point for the crawler.
+ *
+ * Initializes a browser and triggers crawl actions against a URL. Each crawl
+ * action is an abstraction over a certain action such as clicking links,
+ * submitting forms, etc.
+ *
+ * Authentication is handled by creating a new session for each browser
+ * context. New sessions are created by login scripts, for more information see
+ * the login method.
+ *
+ * @param crawl_request - Crawl request as received from the poller/RabbitMQ.
+ * @see `login` method.
+ */
 export async function initCrawlJob(crawl_request : CrawlRequest) {
     logger.info("Launching browser.")
     const browser = await chromium.launch({
 	proxy: {
 	    server: 'localhost:8080',
-	    bypass: ""
+	    bypass: "qowifoihqwfohifqwhoifwqhoifqw.com"
 	}
     });
 
-    if(crawl_request.login_script) {
-        if (!crawl_request.login_script.match(/^[0-9a-z_]+$/)) { 
-            logger.info(`Invalid login script ${crawl_request.login_script}`);
-            throw new Error("Invalid login script");
-        }
-
-        logger.info("Executing login script.")
-        await execShellCommand(`node /home/crawler/ub-crawler/src/login/${crawl_request.login_script}.js`)
-        logger.info("Done.")
-    }
-
+    let actions = [ClickLinksAction, ClickLinksAction];
     logger.info(`${crawl_request.target} -> ${crawl_request.url}: Start`)
-    try {
-	const action = new ClickLinksAction(browser);
-	await action.init(crawl_request.url, crawl_request.target, crawl_request.login_script);
-	await action.perform();
-    } catch(err) {
-	logger.error(err);
+
+    let promises : Promise<void>[] = []
+    for(let actionClass of actions) {
+        promises.push(launchAction(browser, crawl_request, new actionClass(browser)));
     }
 
-    logger.info(`${crawl_request.target} -> ${crawl_request.url}: Done`)
+    try {
+        Promise.all(promises);
+    } catch(err) {
+        logger.error(err);
+    }
 
+    logger.info(`${crawl_request.target} -> ${crawl_request.url}: Finished.`)
     browser.close();
 }
 
