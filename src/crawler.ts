@@ -118,7 +118,7 @@ export async function initCrawlJob(crawl_request : CrawlRequest) {
     }
 
     try {
-        Promise.all(promises);
+        await Promise.all(promises);
     } catch(err) {
         logger.error(err);
     }

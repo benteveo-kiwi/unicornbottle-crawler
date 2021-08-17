@@ -66,6 +66,13 @@ export abstract class Action {
             }
         });
 
+        // Prevent accidental logouts.
+        this.context.route(/logout/i, (route: Route) => {
+            let req = route.request()
+            logger.debug(`Aborted navigation to logout url ${req.url()}`)
+            route.abort();
+        });
+
         await this.page.goto(startUrl, {waitUntil: "networkidle"});
     }
 
