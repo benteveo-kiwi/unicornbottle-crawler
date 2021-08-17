@@ -14,6 +14,11 @@ let logger = getLogger();
  *
  * Additionally, due to the architecture of the crawler the actions may be
  * called multiple times in the same URL.
+ *
+ * I have decided to incorporate randomness into each action. If links are to
+ * be clicked, they will be clicked in a random order. If forms are to be
+ * submitted, they will be submitted in a random order. The main benefit of
+ * this is that it adds a measurable amount of fun and makes life better.
  */
 export abstract class Action {
 
@@ -77,6 +82,20 @@ export abstract class Action {
     }
 
     /**
+     * Shuffles the array according to some fancy algorithm or other.
+     *
+     * @param array - An array to be shuffled.
+     * @see https://stackoverflow.com/a/12646864
+     */
+    shuffleArray(array:any[]) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+
+    /**
      * Conducts the specific actions associated with this Action. This function
      * will be called after "networkIdle" by calling page.waitForLoadState('networkidle')
      */
@@ -102,6 +121,9 @@ export class ClickLinksAction extends Action {
         }
 
         let links = await this.page.$$("a");
+
+        this.shuffleArray(links);
+
         this.context.on('page', this.newPageCallback);
         logger.debug(`Middle clicking ${links.length} links`);
 
