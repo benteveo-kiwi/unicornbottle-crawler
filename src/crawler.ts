@@ -1,5 +1,5 @@
 import type { Browser } from 'playwright';
-import { ClickLinksAction, Action } from "./models/actions";
+import { SubmitFormsAction, ClickLinksAction, Action } from "./models/actions";
 import { chromium, Page, Route } from "playwright";
 import { getLogger } from "./logger";
 import { randomBytes } from "crypto";
@@ -79,7 +79,7 @@ export async function launchAction(browser:Browser, crawl_request:CrawlRequest, 
     let storageState = await login(crawl_request.login_script);
 
     try {
-        await action.init(crawl_request.url, crawl_request.target, storageState);
+        await action.init(crawl_request.target, storageState);
         await action.perform();
     } catch(err) {
         logger.error(err);
@@ -109,12 +109,14 @@ export async function initCrawlJob(crawl_request : CrawlRequest) {
 	}
     });
 
-    let actions = [ClickLinksAction, ClickLinksAction];
+    //let actions = [ClickLinksAction, ClickLinksAction];
+    let actions = [SubmitFormsAction];
     logger.info(`${crawl_request.target} -> ${crawl_request.url}: Start`)
 
-    let promises : Promise<void>[] = []
+    let promises : Promise<void>[] = [];
     for(let actionClass of actions) {
-        promises.push(launchAction(browser, crawl_request, new actionClass(browser)));
+        let action = new actionClass(browser, crawl_request.url);
+        promises.push(launchAction(browser, crawl_request, action));
     }
 
     try {

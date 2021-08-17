@@ -1,4 +1,4 @@
-import type { Route, Browser, BrowserContext, Page } from 'playwright';
+import type { Route, Browser, BrowserContext, Page, ElementHandle } from 'playwright';
 import { getLogger } from "../logger";
 
 let logger = getLogger();
@@ -25,30 +25,32 @@ export abstract class Action {
     readonly browser: Browser;
     context: BrowserContext | null;
     page: Page | null;
-    startUrl: string | null;
+    startUrl: string;
 
     /**
      * Main constructor.
      *
      * @param browser - A Browser instance that will be used for the interactions.
+     * @param startUrl - The initial URL to perform this actions against.
      * @see https://playwright.dev/docs/api/class-browser
      */
-    constructor(browser: Browser) {
+    constructor(browser: Browser, startUrl:string) {
         this.browser = browser;
+        this.startUrl = startUrl;
+
+        // Require initialization at `init`.
         this.context = null;
         this.page = null;
-        this.startUrl = null;
     }
 
     /**
      * Performs basic init of a browser context and navigates to a page to
      * begin processing actions against it.
      *
-     * @param startUrl - The initial URL to perform this actions against.
      * @param target - The target guid.
      * @param storageState - the login script ID for this crawl request. 
      */
-    async init(startUrl : string, target : string, storageState: string|undefined) {
+    async init(target : string, storageState: string|undefined) {
         let contextOptions = {
             extraHTTPHeaders: {
                 "X-UB-GUID": target
@@ -58,7 +60,6 @@ export abstract class Action {
 
         this.context = await this.browser.newContext(contextOptions);
         this.page = await this.context.newPage();
-        this.startUrl = startUrl;
 
         // Prevent accidental navigation of the main frame.
         this.page.route('**', (route: Route) => {
@@ -78,7 +79,7 @@ export abstract class Action {
             route.abort();
         });
 
-        await this.page.goto(startUrl, {waitUntil: "networkidle"});
+        await this.page.goto(this.startUrl, {waitUntil: "networkidle"});
     }
 
     /**
@@ -150,4 +151,84 @@ export class ClickLinksAction extends Action {
         page.close()
     }
 
+}
+
+/**
+ * This action identifies how many forms are present on the current page,
+ * creates that same number of pages, and then procedes to submit each form.
+ *
+ * This also handles the populating of the forms.
+ *
+ * @extends {Action}
+ */
+export class SubmitFormsAction extends Action {
+
+    /**
+     * Main entry point. Grab all forms and inspect them.
+     */
+    async perform() {
+        if(this.page == null || this.context == null) {
+            logger.error("Trying to perform action without initialization.");
+            return;
+        }
+
+        let forms = await this.page.$$("form");
+
+        let promises: Promise<void>[] = [];
+        for(let [key, item] of forms.entries()) {
+            promises.push(this.handleForm(key));
+        }
+
+        await Promise.all(promises);
+    }
+
+    /**
+     * Populate and submit the nth form at page. Creates a new instance of this
+     * page and submits that.
+     *
+     * @param index - get the nth form.
+     */
+    async handleForm(index:number) {
+        let newPage = await this.context!.newPage();
+        await newPage.goto(this.startUrl, {waitUntil: "networkidle"});
+
+        let forms = await newPage.$$("form");
+        let form = forms[index];
+        await this.populateForm(form)
+        await this.submitForm(form)
+    }
+
+    /**
+     * Populates a form. Fills out inputs, etc.
+     *
+     * @param form - the form to fill out.
+     */
+    async populateForm(form:ElementHandle) {
+        let inputs = await form.$$("input")
+
+        let text = "1337" // Officially the best input for any form field.
+        for (let input of inputs) {
+            await input.fill(text);
+        }
+    }
+
+    /**
+     * Submits a form by clicking the submit button if there is any. If not we
+     * force submission of the form.
+     *
+     * @param form - the form to submit.
+     */
+    async submitForm(form:ElementHandle) {
+        let submitButton = await form.$("input[type=submit]")
+        if(submitButton) {
+            await submitButton.click();
+        } else {
+            let input = await form.$('input[type=text]');
+            if(input) {
+                await input.press("Enter");
+            } else {
+                logger.debug(`Could not submit form at url ${this.startUrl}`);
+            }
+        }
+    }
 }
