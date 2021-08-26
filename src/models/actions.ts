@@ -208,7 +208,14 @@ export class SubmitFormsAction extends Action {
 
         let text = "1337" // Officially the best input for any form field.
         for (let input of inputs) {
-            await input.fill(text);
+            let isEditable = await input.isEditable();
+
+            try {
+                await input.fill(text, {force:true});
+            } catch(e) {
+                let type = await input.getAttribute("type");
+                logger.debug(`Could not fill input type ${type}`);
+            }
         }
     }
 
@@ -221,14 +228,18 @@ export class SubmitFormsAction extends Action {
     async submitForm(form:ElementHandle) {
         let submitButton = await form.$("input[type=submit]")
         if(submitButton) {
-            await submitButton.click();
+            await submitButton.click({force:true});
         } else {
             let input = await form.$('input[type=text]');
             if(input) {
                 await input.press("Enter");
             } else {
                 logger.debug(`Could not submit form at url ${this.startUrl}`);
+                return;
             }
         }
+
+        logger.debug("Successfully submitted form.");
+
     }
 }
