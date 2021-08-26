@@ -109,8 +109,7 @@ export async function initCrawlJob(crawl_request : CrawlRequest) {
 	}
     });
 
-    //let actions = [ClickLinksAction, ClickLinksAction];
-    let actions = [SubmitFormsAction];
+    let actions = [ClickLinksAction, SubmitFormsAction];
     logger.info(`${crawl_request.target} -> ${crawl_request.url}: Start`)
 
     let promises : Promise<void>[] = [];
