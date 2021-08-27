@@ -214,7 +214,10 @@ export class SubmitFormsAction extends Action {
                 await input.fill(text, {force:true});
             } catch(e) {
                 let type = await input.getAttribute("type");
-                logger.debug(`Could not fill input type ${type}`);
+                let id = await input.getAttribute("id");
+                let name = await input.getAttribute("name");
+
+                logger.debug(`Could not fill input type ${type} id ${id} name ${name}`);
             }
         }
     }
