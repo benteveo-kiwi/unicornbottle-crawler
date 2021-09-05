@@ -17,7 +17,7 @@ export interface CrawlRequest {
  * @param cmd {string}
  * @return {Promise<string>}
  */
-function execShellCommand(cmd:string) {
+function execShellCommand(cmd:string) : Promise<string> {
     const exec = require('child_process').exec;
     return new Promise((resolve, reject) => {
 	exec(cmd, (error:string, stdout:string, stderr:string) => {
@@ -126,5 +126,7 @@ export async function initCrawlJob(crawl_request : CrawlRequest) {
 
     logger.info(`${crawl_request.target} -> ${crawl_request.url}: Finished.`)
     browser.close();
+
+    await execShellCommand(`python3 ~cli/ub-cli/ub-cli.py update endpoint-metadata --guid ${crawl_request.target} --pretty-url ${crawl_request.url} --no-errors`);
 }
 
