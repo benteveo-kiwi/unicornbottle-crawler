@@ -118,15 +118,19 @@ export async function initCrawlJob(crawl_request : CrawlRequest) {
         promises.push(launchAction(browser, crawl_request, action));
     }
 
+    let errors:boolean = false;
     try {
         await Promise.all(promises);
     } catch(err) {
+        errors = true;
         logger.error(err);
     }
 
     logger.info(`${crawl_request.target} -> ${crawl_request.url}: Finished.`)
     browser.close();
 
-    await execShellCommand(`python3 ~cli/ub-cli/ub-cli.py update endpoint-metadata --guid ${crawl_request.target} --pretty-url ${crawl_request.url} --no-errors`);
+    let errors_str:string = errors ? "--errors" : "--no-errors"
+
+    await execShellCommand(`python3 ~cli/ub-cli/ub-cli.py update crawl-finished --guid ${crawl_request.target} --pretty-url ${crawl_request.url} ${errors_str}`);
 }
 
