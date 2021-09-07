@@ -1,3 +1,17 @@
+"""
+This standalone script uses playwright codegen to create a base login script,
+which is then modified using AI-powered advanced heuristics.
+
+It will spawn a browser in the URL you specify, at which point you need to
+login. After you login you should click on an element which you think both a)
+will only appear when you are logged in and b) won't change between logins.
+This will be used to differentiate between successful and failed logins by the
+crawler/fuzzer.
+
+Additionally you should stop recording before closing the browser otherwise it
+will create a broken script.
+"""
+
 import os
 import subprocess
 import sys
@@ -6,7 +20,7 @@ class ReplacementFailed(Exception):
     pass
 
 if len(sys.argv) < 3:
-    print("[-] Usage: python3 generator.py <NAME> <Initial URL>")
+    print("[-] Usage: python3 generator.py <LOGIN_SCRIPT_NAME> <Initial URL>")
     sys.exit()
 else:
     name = sys.argv[1]

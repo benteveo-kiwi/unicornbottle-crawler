@@ -12,6 +12,9 @@ const { chromium } = require('playwright');
   // Go to http://unicornbottle-main/DVWA/login.php
   await page.goto('http://unicornbottle-main/DVWA/login.php');
 
+  // Click text=Username Password Login
+  await page.click('text=Username Password Login');
+
   // Click input[name="username"]
   await page.click('input[name="username"]');
 
@@ -27,6 +30,9 @@ const { chromium } = require('playwright');
   // Click text=Login
   await page.click('text=Login');
   // assert.equal(page.url(), 'http://unicornbottle-main/DVWA/index.php');
+
+  // Click text=Damn Vulnerable Web Application (DVWA) is a PHP/MySQL web application that is da
+  await page.click('text=Damn Vulnerable Web Application (DVWA) is a PHP/MySQL web application that is da');
 
   // ---------------------
   await context.storageState({ path: '' + process.argv[2] });
