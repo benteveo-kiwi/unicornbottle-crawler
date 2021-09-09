@@ -1,4 +1,4 @@
-import type { Route, Browser, BrowserContext, Page, ElementHandle } from 'playwright';
+import type { Response, Route, Browser, BrowserContext, Page, ElementHandle } from 'playwright';
 import { getLogger } from "../logger";
 
 let logger = getLogger();
@@ -23,9 +23,11 @@ let logger = getLogger();
 export abstract class Action {
 
     readonly browser: Browser;
+    startUrl: string;
+
     context: BrowserContext | null;
     page: Page | null;
-    startUrl: string;
+    initialResponse: Response | null;
 
     /**
      * Main constructor.
@@ -38,9 +40,9 @@ export abstract class Action {
         this.browser = browser;
         this.startUrl = startUrl;
 
-        // Require initialization at `init`.
         this.context = null;
         this.page = null;
+        this.initialResponse = null;
     }
 
     /**
@@ -79,7 +81,7 @@ export abstract class Action {
             route.abort();
         });
 
-        await this.page.goto(this.startUrl, {waitUntil: "networkidle"});
+        this.initialResponse = await this.page.goto(this.startUrl, {waitUntil: "networkidle"});
     }
 
     /**
@@ -122,8 +124,19 @@ export class ClickLinksAction extends Action {
         }
 
         let links = await this.page.$$("a");
+        if(links.length == 0) {
+            logger.debug(`No links! page url ${this.page.url()} page content:`);
+            if(this.initialResponse != null) {
+                logger.debug(JSON.stringify(this.initialResponse.headers()));
+                console.log(this.initialResponse.headers());
+            } else {
+                logger.debug("No initialResponse?");
+            }
+            logger.debug(await this.page.content());
+            return;
+        }
 
-        this.shuffleArray(links);
+        this.shuffleArray(links); // Randomness is the spice of life.
 
         this.context.on('page', this.newPageCallback);
         logger.debug(`Middle clicking ${links.length} links`);
@@ -174,6 +187,7 @@ export class SubmitFormsAction extends Action {
 
         let forms = await this.page.$$("form");
 
+        logger.debug(`Submitting ${forms.length} form(s).`);
         let promises: Promise<void>[] = [];
         for(let [key, item] of forms.entries()) {
             promises.push(this.handleForm(key));
