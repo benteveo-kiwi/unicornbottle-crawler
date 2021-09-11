@@ -46,7 +46,7 @@ amqp.connect(connCreds, function(error0, connection) {
             let crawl_request: CrawlRequest = JSON.parse(msg.content.toString());
             await initCrawlJob(crawl_request);
 
-            logger.info("Finished crawling")
+            logger.info("Acking RabbitMQ task.")
             channel.ack(msg);
         }, {
             noAck: false // Manual acknowledgement mode.

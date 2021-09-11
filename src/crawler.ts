@@ -2,6 +2,7 @@ import type { Browser } from 'playwright';
 import { SubmitFormsAction, ClickLinksAction, Action } from "./models/actions";
 import { chromium, Page, Route } from "playwright";
 import { getLogger } from "./logger";
+import { execShellCommand, randomString } from "./utility";
 import { randomBytes } from "crypto";
 
 let logger = getLogger();
@@ -10,32 +11,6 @@ export interface CrawlRequest {
     url: string;
     target: string;
     login_script: string;
-}
-
-/**
- * Executes a shell command and return it as a Promise.
- * @param cmd {string}
- * @return {Promise<string>}
- */
-function execShellCommand(cmd:string) : Promise<string> {
-    const exec = require('child_process').exec;
-    return new Promise((resolve, reject) => {
-        //let env = {"DEBUG": "pw:api"}
-        let env = {}
-        exec(cmd, {timeout: 10000, env: env}, (error:string, stdout:string, stderr:string) => {
-	    if (error) {
-		logger.error(error);
-	    }
-	    resolve(stdout? stdout : stderr);
-	});
-    });
-}
-
-/**
- * Get a pseudorandom string.
- */
-function randomString() {
-    return randomBytes(20).toString('hex');
 }
 
 /**
@@ -128,11 +103,17 @@ export async function initCrawlJob(crawl_request : CrawlRequest) {
         logger.error(err);
     }
 
-    logger.info(`${crawl_request.target} -> ${crawl_request.url}: Finished.`)
+    let errors_str:string = errors ? "--errors" : "--no-errors"
+    let finished_str:string = errors ? "Failed" : "Completed successfully"
+    
+    logger.info(`${crawl_request.target} -> ${crawl_request.url}: ${finished_str}.`)
     browser.close();
 
-    let errors_str:string = errors ? "--errors" : "--no-errors"
 
-    logger.debug(await execShellCommand(`python3 ~cli/ub-cli/ub-cli.py update crawl-finished --guid ${crawl_request.target} --pretty-url ${crawl_request.url} ${errors_str}`));
+    try {
+        await execShellCommand(`python3 ~cli/ub-cli/ub-cli.py update crawl-finished --guid ${crawl_request.target} --pretty-url ${crawl_request.url} ${errors_str}`);
+    } catch(err) {
+        logger.error("Error reporting crawl-finished: " + err);
+    }
 }
 
