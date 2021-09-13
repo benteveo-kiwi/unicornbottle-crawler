@@ -2,7 +2,7 @@ import type { Browser } from 'playwright';
 import { SubmitFormsAction, ClickLinksAction, Action } from "./models/actions";
 import { chromium, Page, Route } from "playwright";
 import { getLogger } from "./logger";
-import { execShellCommand, randomString } from "./utility";
+import { execute, randomString } from "./utility";
 import { randomBytes } from "crypto";
 
 let logger = getLogger();
@@ -32,7 +32,8 @@ async function login(login_script:string|undefined) {
         let sessionId = randomString();
 
         let storageState = `/home/crawler/ub-crawler/src/login/${sessionId}.storage`;
-        logger.debug(await execShellCommand(`node /home/crawler/ub-crawler/src/login/${login_script}.js ${storageState}`));
+
+        await execute("node", [`/home/crawler/ub-crawler/src/login/${login_script}.js`, storageState]);
 
         logger.debug(`Done. Generated storageState ${storageState}.`);
 
@@ -95,23 +96,34 @@ export async function initCrawlJob(crawl_request : CrawlRequest) {
         promises.push(launchAction(browser, crawl_request, action));
     }
 
-    let errors:boolean = false;
+    let exception:boolean = false;
+    let fail:boolean = false;
     try {
         await Promise.all(promises);
     } catch(err) {
-        errors = true;
+        exception = true;
         logger.error(err);
     }
 
-    let errors_str:string = errors ? "--errors" : "--no-errors"
-    let finished_str:string = errors ? "Failed" : "Completed successfully"
+    let exception_str:string = exception ? "--exception " : "";
+    let fail_str:string = fail ? "--fail " : "";
+    let finished_str:string = exception || fail ? "Failed" : "Completed successfully";
     
-    logger.info(`${crawl_request.target} -> ${crawl_request.url}: ${finished_str}.`)
+    logger.info(`${crawl_request.target} -> ${crawl_request.url}: ${finished_str}.`);
     browser.close();
+
+    let args:string[] = ["/home/cli/ub-cli/ub-cli.py", "update",
+        "crawl-finished", "--guid", crawl_request.target, "--pretty-url", crawl_request.url];
+
+    if(exception) {
+        args.push("--exception");
+    } else if(fail) {
+        args.push("--fail");
+    }
 
 
     try {
-        await execShellCommand(`python3 ~cli/ub-cli/ub-cli.py update crawl-finished --guid ${crawl_request.target} --pretty-url ${crawl_request.url} ${errors_str}`);
+        await execute("python3", args);
     } catch(err) {
         logger.error("Error reporting crawl-finished: " + err);
     }
