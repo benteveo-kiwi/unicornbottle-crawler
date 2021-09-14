@@ -64,6 +64,7 @@ export abstract class Action {
 
         this.context = await this.browser.newContext(contextOptions);
         this.page = await this.context.newPage();
+        this.initialResponse = await this.page.goto(this.startUrl, {waitUntil: "networkidle"});
 
         // Prevent accidental navigation of the main frame.
         this.page.route('**', (route: Route) => {
@@ -82,8 +83,6 @@ export abstract class Action {
             logger.debug(`Aborted navigation to logout url ${req.url()}`)
             route.abort();
         });
-
-        this.initialResponse = await this.page.goto(this.startUrl, {waitUntil: "networkidle"});
 
         if(this.initialResponse == null) { 
             return false;
