@@ -13,6 +13,8 @@ export interface CrawlRequest {
     login_script: string;
 }
 
+class ActionInitError extends Error {}
+
 /**
  * This function executes the login script, which through convention will write
  * the session storage data to the first argument passed.
@@ -52,15 +54,42 @@ async function login(login_script:string|undefined) {
  * @param browser - a new playwright Browser instance.
  * @param crawl_request - crawl request as received from RabbitMQ.
  * @param action - An instantiated Action class, without `init` called.
+ * @throws ActionInitError when the response is non-200 or we cannot get a
+ *  response for reasons.
  */
-export async function launchAction(browser:Browser, crawl_request:CrawlRequest, action:Action) {
+async function launchAction(browser:Browser, crawl_request:CrawlRequest, action:Action) : Promise<void> {
     let storageState = await login(crawl_request.login_script);
 
+    let initSuccessful:boolean = await action.init(crawl_request.target, storageState);
+    if(!initSuccessful) {
+        // Transform an exception into a failure.
+        throw new ActionInitError(`Init failed for ${action.constructor.name} for ${crawl_request.url}.`);
+    }
+
+    await action.perform();
+}
+
+/**
+ * Record the state of the crawl to the DB.
+ *
+ * @param crawl_request - The CrawlRequest object.
+ * @param exception - Whether this request failed due to an unhandled exception.
+ * @param fail - Whether this request failed due to a 404 page or unknown host or similar.
+ */
+async function notifyCrawlFinished(crawl_request : CrawlRequest, exception:boolean, fail:boolean) {
+    let args:string[] = ["/home/cli/ub-cli/ub-cli.py", "update",
+        "crawl-finished", "--guid", crawl_request.target, "--pretty-url", crawl_request.url];
+
+    if(exception) {
+        args.push("--exception");
+    } else if(fail) {
+        args.push("--fail");
+    }
+
     try {
-        await action.init(crawl_request.target, storageState);
-        await action.perform();
+        logger.debug(await execute("python3", args));
     } catch(err) {
-        logger.error(err);
+        logger.error("Error reporting crawl-finished: " + err);
     }
 }
 
@@ -80,6 +109,7 @@ export async function launchAction(browser:Browser, crawl_request:CrawlRequest, 
  */
 export async function initCrawlJob(crawl_request : CrawlRequest) {
     logger.info("Launching browser.")
+
     const browser = await chromium.launch({
 	proxy: {
 	    server: 'localhost:8080',
@@ -87,45 +117,37 @@ export async function initCrawlJob(crawl_request : CrawlRequest) {
 	}
     });
 
-    let actions = [ClickLinksAction, SubmitFormsAction];
     logger.info(`${crawl_request.target} -> ${crawl_request.url}: Start`)
 
+    // Create required instances.
     let promises : Promise<void>[] = [];
+    let actions = [ClickLinksAction, SubmitFormsAction];
     for(let actionClass of actions) {
         let action = new actionClass(browser, crawl_request.url);
         promises.push(launchAction(browser, crawl_request, action));
     }
 
+    // Init & launch all crawlers.
     let exception:boolean = false;
     let fail:boolean = false;
     try {
         await Promise.all(promises);
     } catch(err) {
-        exception = true;
+        if(err instanceof ActionInitError) {
+            fail = true;
+        } else {
+            exception = true;
+        }
         logger.error(err);
     }
 
-    let exception_str:string = exception ? "--exception " : "";
-    let fail_str:string = fail ? "--fail " : "";
+    // Perform shutdown.
+    await notifyCrawlFinished(crawl_request, exception, fail);
+
     let finished_str:string = exception || fail ? "Failed" : "Completed successfully";
-    
     logger.info(`${crawl_request.target} -> ${crawl_request.url}: ${finished_str}.`);
     browser.close();
 
-    let args:string[] = ["/home/cli/ub-cli/ub-cli.py", "update",
-        "crawl-finished", "--guid", crawl_request.target, "--pretty-url", crawl_request.url];
 
-    if(exception) {
-        args.push("--exception");
-    } else if(fail) {
-        args.push("--fail");
-    }
-
-
-    try {
-        await execute("python3", args);
-    } catch(err) {
-        logger.error("Error reporting crawl-finished: " + err);
-    }
 }
 

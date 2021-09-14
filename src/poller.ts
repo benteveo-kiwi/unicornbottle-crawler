@@ -1,6 +1,8 @@
 import amqp from "amqplib/callback_api";
 import { getLogger } from "./logger";
 import { CrawlRequest, initCrawlJob } from './crawler';
+import 'source-map-support/register'
+
 
 let logger = getLogger()
 
@@ -40,9 +42,8 @@ amqp.connect(connCreds, function(error0, connection) {
                 return;
             }
 
-            logger.info("Received crawl job, starting." + msg.content.toString());
+            logger.debug("Received crawl job, starting. Raw message: " + msg.content.toString());
 
-            // JSON is not verified as JSON.parse returns Any.
             let crawl_request: CrawlRequest = JSON.parse(msg.content.toString());
             await initCrawlJob(crawl_request);
 

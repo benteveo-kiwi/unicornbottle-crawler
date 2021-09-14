@@ -51,8 +51,10 @@ export abstract class Action {
      *
      * @param target - The target guid.
      * @param storageState - the login script ID for this crawl request. 
+     * @return boolean whether the response status code is acceptable for this
+     *  crawl request.
      */
-    async init(target : string, storageState: string|undefined) {
+    async init(target : string, storageState: string|undefined) : Promise<boolean> {
         let contextOptions = {
             extraHTTPHeaders: {
                 "X-UB-GUID": target
@@ -82,6 +84,12 @@ export abstract class Action {
         });
 
         this.initialResponse = await this.page.goto(this.startUrl, {waitUntil: "networkidle"});
+
+        if(this.initialResponse == null) { 
+            return false;
+        } else {
+            return this.initialResponse.status() == 200;
+        }
     }
 
     /**
@@ -96,7 +104,6 @@ export abstract class Action {
             [array[i], array[j]] = [array[j], array[i]];
         }
     }
-
 
     /**
      * Conducts the specific actions associated with this Action. This function
