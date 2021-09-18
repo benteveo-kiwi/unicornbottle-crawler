@@ -1,9 +1,10 @@
 import type { Browser } from 'playwright';
 import { SubmitFormsAction, ClickLinksAction, Action } from "./models/actions";
 import { chromium, Page, Route } from "playwright";
-import { getLogger } from "./logger";
 import { execute, randomString } from "./utility";
+import { getLogger } from "./logger";
 import { randomBytes } from "crypto";
+import { unlink } from 'fs';
 
 let logger = getLogger();
 
@@ -60,13 +61,21 @@ async function login(login_script:string|undefined) {
 async function launchAction(browser:Browser, crawl_request:CrawlRequest, action:Action) : Promise<void> {
     let storageState = await login(crawl_request.login_script);
 
-    let initSuccessful:boolean = await action.init(crawl_request.target, storageState);
-    if(!initSuccessful) {
-        // Transform an exception into a failure.
-        throw new ActionInitError(`Init failed for ${action.constructor.name} for ${crawl_request.url}.`);
-    }
+    try {
+        let initSuccessful:boolean = await action.init(crawl_request.target, storageState);
+        if(!initSuccessful) {
+            // Transform an exception into a failure.
+            throw new ActionInitError(`Init failed for ${action.constructor.name} for ${crawl_request.url}.`);
+        }
 
-    await action.perform();
+        await action.perform();
+    } finally {
+        if(storageState !== undefined) {
+            unlink(storageState, (err) => {
+                logger.error(`Unable to unlink storageState located at ${storageState}`);
+            });
+        }
+    }
 }
 
 /**
