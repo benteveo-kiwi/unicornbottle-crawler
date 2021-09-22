@@ -85,9 +85,15 @@ export abstract class Action {
         });
 
         if(this.initialResponse == null) { 
+            logger.error("Cannot initiate action because we received no response.");
             return false;
         } else {
-            return this.initialResponse.status() == 200;
+            if(this.initialResponse.status() == 200) {
+                return true;
+            } else {
+                logger.error(`Cannot initiate action because response status code is ${this.initialResponse.status()}`);
+                return false;
+            }
         }
     }
 
