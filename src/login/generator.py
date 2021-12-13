@@ -49,7 +49,22 @@ cmd = ['npx', 'playwright', 'codegen', '--target', 'javascript', '-o', output_js
 process = subprocess.Popen(cmd)
 process.wait()
 
+# It is important that the login script goes through the proxy.
+new_browser_settings = """
+      headless: true,
+      proxy: {
+          server: 'localhost:8080',
+          bypass: "qowifoihqwfohifqwhoifwqhoifqw.com"
+      }
+"""
+
+# Setup authentication for the proxy.
+new_context = "newContext({extraHTTPHeaders: { 'X-UB-GUID': 'b179a4aa-5a42-4e04-90b6-f217eb46538b' /* hard-coded for login */ }})"
+
 # Perform advanced AI-powered heuristic code transformations. :)
-replace_in_file(output_js_file, "headless: false", "headless: true")
+replace_in_file(output_js_file, "headless: false", new_browser_settings)
+replace_in_file(output_js_file, "newContext()", new_context)
+
+# Write to named storage file.
 replace_in_file(output_js_file, storage_name + "'", "' + process.argv[2]")
 
