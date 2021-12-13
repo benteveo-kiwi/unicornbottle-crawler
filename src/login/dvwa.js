@@ -2,9 +2,13 @@ const { chromium } = require('playwright');
 
 (async () => {
   const browser = await chromium.launch({
-    headless: true
+      headless: true,
+      proxy: {
+          server: 'localhost:8080',
+          bypass: "qowifoihqwfohifqwhoifwqhoifqw.com"
+      }
   });
-  const context = await browser.newContext();
+  const context = await browser.newContext({extraHTTPHeaders: { 'X-UB-GUID': 'b179a4aa-5a42-4e04-90b6-f217eb46538b' /* hard-coded for login */ }})
 
   // Open new page
   const page = await context.newPage();
@@ -13,7 +17,7 @@ const { chromium } = require('playwright');
   await page.goto('http://dvwa/DVWA/login.php');
 
   // Click text=Username Password Login
-  await page.click('text=Username Password Login');
+  //await page.click('text=Username Password Login');
 
   // Click input[name="username"]
   await page.click('input[name="username"]');
