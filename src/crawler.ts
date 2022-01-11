@@ -153,10 +153,10 @@ export async function initCrawlJob(crawl_request : CrawlRequest) {
     // Perform shutdown.
     await notifyCrawlFinished(crawl_request, exception, fail);
 
+    await browser.close();
+
     let finished_str:string = exception || fail ? "Failed" : "Completed successfully";
     logger.info(`${crawl_request.target} -> ${crawl_request.url}: ${finished_str}.`);
-    browser.close();
-
 
 }
 
