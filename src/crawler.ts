@@ -98,7 +98,7 @@ async function notifyCrawlFinished(crawl_request : CrawlRequest, exception:boole
     try {
         logger.debug(await execute("poetry", args, "/home/cli/ub-cli/"));
     } catch(err) {
-        logger.error("Error reporting crawl-finished: " + err);
+        logger.error(err);
     }
 }
 
