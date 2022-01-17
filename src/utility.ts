@@ -12,11 +12,11 @@ let logger = getLogger();
  * @param cmd {string}
  * @return {Promise<string>}
  */
-export function execute(file:string, args:string[]) : Promise<string> {
+export function execute(file:string, args:string[], cwd:string|undefined=undefined) : Promise<string> {
     return new Promise((resolve, reject) => {
         //let env = {"DEBUG": "pw:api"}
         let env = {}
-        execFile(file, args, {timeout: 10000, env: env}, (error:Error|null, stdout:string, stderr:string) => {
+        execFile(file, args, {timeout: 10000, env: env, cwd:cwd}, (error:Error|null, stdout:string, stderr:string) => {
 	    if (error) {
                 reject(stderr);
 	    } else {
