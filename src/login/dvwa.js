@@ -4,7 +4,7 @@ const { chromium } = require('playwright');
   const browser = await chromium.launch({
       headless: true,
       proxy: {
-          server: 'localhost:8080',
+          server: 'unicornbottle-main:8080',
           bypass: "qowifoihqwfohifqwhoifwqhoifqw.com"
       }
   });
