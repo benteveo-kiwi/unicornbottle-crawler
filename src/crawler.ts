@@ -86,7 +86,7 @@ async function launchAction(browser:Browser, crawl_request:CrawlRequest, action:
  * @param fail - Whether this request failed due to a 404 page or unknown host or similar.
  */
 async function notifyCrawlFinished(crawl_request : CrawlRequest, exception:boolean, fail:boolean) {
-    let args:string[] = ["/home/cli/ub-cli/ub-cli.py", "update",
+    let args:string[] = ["run", "python", "ub-cli.py", "update",
         "crawl-finished", "--guid", crawl_request.target, "--pretty-url", crawl_request.url];
 
     if(exception) {
@@ -96,7 +96,7 @@ async function notifyCrawlFinished(crawl_request : CrawlRequest, exception:boole
     }
 
     try {
-        logger.debug(await execute("python3", args));
+        logger.debug(await execute("poetry", args, "/home/cli/ub-cli/"));
     } catch(err) {
         logger.error("Error reporting crawl-finished: " + err);
     }
