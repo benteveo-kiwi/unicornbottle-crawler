@@ -34,7 +34,7 @@ async function login(login_script:string|undefined) {
         logger.debug("Executing login script.");
         let sessionId = randomString();
 
-        let storageState = `/home/crawler/ub-crawler/src/login/${sessionId}.storage`;
+        let storageState = `/home/crawler/ub-crawler/src/login/states/${sessionId}.storage`;
 
         await execute("node", [`/home/crawler/ub-crawler/src/login/${login_script}.js`, storageState]);
 
@@ -121,8 +121,8 @@ export async function initCrawlJob(crawl_request : CrawlRequest) {
 
     const browser = await chromium.launch({
 	proxy: {
-	    server: 'localhost:8080',
-	    bypass: "qowifoihqwfohifqwhoifwqhoifqw.com"
+	    server: 'unicornbottle-main:8080',
+	    bypass: "qowifoihqwfohifqwhoifwqhoifqw.com" // Don't bypass.
 	}
     });
 
