@@ -18,7 +18,8 @@ export function execute(file:string, args:string[], cwd:string|undefined=undefin
         let env = {}
         execFile(file, args, {timeout: 10000, env: env, cwd:cwd}, (error:Error|null, stdout:string, stderr:string) => {
 	    if (error) {
-                reject(stderr);
+                logger.error(`Error executing ${file} ${args}, (stderr: ${stderr})`);
+                reject(error);
 	    } else {
                 resolve(stdout? stdout : stderr);
             }
