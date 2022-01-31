@@ -1,8 +1,8 @@
 import amqp from "amqplib/callback_api";
-import { getLogger } from "./logger";
+import { chromium } from "playwright";
 import { CrawlRequest, initCrawlJob } from './crawler';
+import { getLogger } from "./logger";
 import 'source-map-support/register'
-
 
 let logger = getLogger()
 
@@ -21,12 +21,20 @@ amqp.connect(connCreds, function(error0, connection) {
         throw error0;
     }
 
-    connection.createChannel(function(error1, channel) {
+    connection.createChannel(async function(error1, channel) {
         if (error1) {
             logger.error(error1)
             throw error1;
         }
         logger.info("Connected successfully.")
+        logger.info("Launching browser.")
+
+        const browser = await chromium.launch({
+            proxy: {
+                server: 'unicornbottle-main:8080',
+                bypass: "qowifoihqwfohifqwhoifwqhoifqw.com" // Don't bypass.
+            }
+        });
 
         var queue = 'crawl_tasks';
 
@@ -45,7 +53,7 @@ amqp.connect(connCreds, function(error0, connection) {
             logger.debug("Received crawl job, starting. Raw message: " + msg.content.toString());
 
             let crawl_request: CrawlRequest = JSON.parse(msg.content.toString());
-            await initCrawlJob(crawl_request);
+            await initCrawlJob(browser, crawl_request);
 
             logger.info("Acking RabbitMQ task.")
             channel.ack(msg);

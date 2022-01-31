@@ -1,9 +1,9 @@
-import type { Browser } from 'playwright';
-import { SubmitFormsAction, ClickLinksAction, Action } from "./models/actions";
 import { chromium, Page, Route } from "playwright";
 import { execute, randomString } from "./utility";
 import { getLogger } from "./logger";
 import { randomBytes } from "crypto";
+import { SubmitFormsAction, ClickLinksAction, Action } from "./models/actions";
+import type { Browser } from 'playwright';
 import { unlink } from 'fs';
 
 let logger = getLogger();
@@ -70,6 +70,8 @@ async function launchAction(browser:Browser, crawl_request:CrawlRequest, action:
 
         await action.perform();
     } finally {
+        action.close();
+
         if(storageState !== undefined) {
             unlink(storageState, (err) => {
                 logger.error(`Unable to unlink storageState located at ${storageState}`);
@@ -113,18 +115,11 @@ async function notifyCrawlFinished(crawl_request : CrawlRequest, exception:boole
  * context. New sessions are created by login scripts, for more information see
  * the login method.
  *
+ * @param browser - a new playwright Browser instance.
  * @param crawl_request - Crawl request as received from the poller/RabbitMQ.
  * @see `login` method.
  */
-export async function initCrawlJob(crawl_request : CrawlRequest) {
-    logger.info("Launching browser.")
-
-    const browser = await chromium.launch({
-	proxy: {
-	    server: 'unicornbottle-main:8080',
-	    bypass: "qowifoihqwfohifqwhoifwqhoifqw.com" // Don't bypass.
-	}
-    });
+export async function initCrawlJob(browser:Browser, crawl_request:CrawlRequest) {
 
     logger.info(`${crawl_request.target} -> ${crawl_request.url}: Start`)
 
@@ -150,10 +145,7 @@ export async function initCrawlJob(crawl_request : CrawlRequest) {
         logger.error(err);
     }
 
-    // Perform shutdown.
     await notifyCrawlFinished(crawl_request, exception, fail);
-
-    await browser.close();
 
     let finished_str:string = exception || fail ? "Failed" : "Completed successfully";
     logger.info(`${crawl_request.target} -> ${crawl_request.url}: ${finished_str}.`);
