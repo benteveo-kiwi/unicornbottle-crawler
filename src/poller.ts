@@ -14,6 +14,15 @@ let connCreds = {
     password: process.env.RABBIT_PASSWORD
 }
 
+/**
+ * Generate random Integer.
+ *
+ * @param min: minimum number (inclusive)
+ * @param max: max number (inclusive)
+ */
+function randomInt(min:number, max:number) : number {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 amqp.connect(connCreds, function(error0, connection) {
     if (error0) {
@@ -26,12 +35,26 @@ amqp.connect(connCreds, function(error0, connection) {
             logger.error(error1)
             throw error1;
         }
-        logger.info("Connected successfully.")
+
+        // Wait a little bit to prevent overloading the system by launching a
+        // bunch of browsers at exactly the same time.
+        let delay = randomInt(0, 20);
+        logger.info(`Connected successfully. Will wait for ${delay} seconds prior to launching browser.`)
+        await new Promise(f => setTimeout(f, delay*1000));
         logger.info("Launching browser.")
 
+        // We run several proxies for crawlers, like so:
+        //tcp6       0      0 :::8081                 :::*                    LISTEN      2159584/python
+        //tcp6       0      0 :::8082                 :::*                    LISTEN      2160276/python
+        //tcp6       0      0 :::8083                 :::*                    LISTEN      2161624/python
+        //tcp6       0      0 :::8084                 :::*                    LISTEN      2162051/python
+        //tcp6       0      0 :::8085                 :::*                    LISTEN      2162986/python
+        //tcp6       0      0 :::8086                 :::*                    LISTEN      2163517/python
+        let port:number = 8000 + randomInt(1, 6);
+        logger.info(`Using proxy on port ${port}`);
         const browser = await chromium.launch({
             proxy: {
-                server: 'unicornbottle-main:8080',
+                server: 'unicornbottle-main:' + port,
                 bypass: "qowifoihqwfohifqwhoifwqhoifqw.com" // Don't bypass.
             }
         });

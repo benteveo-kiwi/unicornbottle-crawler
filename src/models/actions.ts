@@ -63,8 +63,16 @@ export abstract class Action {
         }
 
         this.context = await this.browser.newContext(contextOptions);
+        this.context.setDefaultNavigationTimeout(8000);
+
         this.page = await this.context.newPage();
-        this.initialResponse = await this.page.goto(this.startUrl, {waitUntil: "networkidle"});
+        this.initialResponse = await this.page.goto(this.startUrl);
+
+        try {
+            this.page.waitForLoadState('networkidle');
+        } catch(e) {
+            logger.debug("Never reached netowrk idle, but that's OK.");
+        }
 
         // Prevent accidental navigation of the main frame.
         this.page.route('**', (route: Route) => {
@@ -88,12 +96,7 @@ export abstract class Action {
             logger.error("Cannot initiate action because we received no response.");
             return false;
         } else {
-            if(this.initialResponse.status() == 200) {
-                return true;
-            } else {
-                logger.error(`Cannot initiate action because response status code is ${this.initialResponse.status()}`);
-                return false;
-            }
+            return true;
         }
     }
 
@@ -121,7 +124,10 @@ export abstract class Action {
 
     /**
      * Conducts the specific actions associated with this Action. This function
-     * will be called after "networkIdle" by calling page.waitForLoadState('networkidle')
+     * will be called after "networkidle" by calling
+     * page.waitForLoadState('networkidle'). In some cases network idle is not
+     * reached due to long running recurring network requests, but we will
+     * still call `perform()` after a timeout anyways because life is short.
      */
     abstract perform() : Promise<void>;
 }
@@ -164,10 +170,15 @@ export class ClickLinksAction extends Action {
 
         let nb = 0;
         for (let link of links) {
-            await Promise.all([
-                this.context.waitForEvent('page'),
-                link.click({force: true, button:"middle"})
-            ]);
+            try {
+                await Promise.all([
+                    this.context.waitForEvent('page'),
+                    link.click({force: true, button:"middle"})
+                ]);
+            } catch(e) {
+                logger.debug("Couldn't click a link, it was not visible maybe.");
+            }
+
             if(nb % 10 === 0 && nb != 0) {
                 logger.info(`Clicked ${nb} links.`);
             }
@@ -225,7 +236,12 @@ export class SubmitFormsAction extends Action {
      */
     async handleForm(index:number) {
         let newPage = await this.context!.newPage();
-        await newPage.goto(this.startUrl, {waitUntil: "networkidle"});
+        await newPage.goto(this.startUrl);
+        try {
+            newPage.waitForLoadState('networkidle');
+        } catch(e) {
+            logger.debug("Never reached netowrk idle, but submitting form anyway.");
+        }
 
         let forms = await newPage.$$("form");
         let form = forms[index];
@@ -265,9 +281,19 @@ export class SubmitFormsAction extends Action {
      */
     async submitForm(form:ElementHandle) {
         let submitButton = await form.$("input[type=submit]")
+        let submitted = false;
+        // Try to click any submit buttons.
         if(submitButton) {
-            await submitButton.click({force:true});
-        } else {
+            try {
+                await submitButton.click({force:true});
+                submitted = true;
+            } catch(e) {
+                logger.debug("Couldn't click submit button, rude.");
+            }
+        } 
+
+        // Try to press enter.
+        if(!submitted) {
             let input = await form.$('input[type=text]');
             if(input) {
                 await input.press("Enter");
