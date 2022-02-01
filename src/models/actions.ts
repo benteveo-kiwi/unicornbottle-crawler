@@ -98,6 +98,15 @@ export abstract class Action {
     }
 
     /**
+     * Performs several related cleanups and closes as required.
+     */
+    async close() {
+        if(this.context) {
+            await this.context.close();
+        }
+    }
+
+    /**
      * Shuffles the array according to some fancy algorithm or other.
      *
      * @param array - An array to be shuffled.
@@ -160,7 +169,7 @@ export class ClickLinksAction extends Action {
                 link.click({force: true, button:"middle"})
             ]);
             if(nb % 10 === 0 && nb != 0) {
-                logger.debug(`Clicked ${nb} links.`);
+                logger.info(`Clicked ${nb} links.`);
             }
             nb++;
         }
@@ -199,7 +208,7 @@ export class SubmitFormsAction extends Action {
 
         let forms = await this.page.$$("form");
 
-        logger.debug(`Submitting ${forms.length} form(s).`);
+        logger.info(`Submitting ${forms.length} form(s).`);
         let promises: Promise<void>[] = [];
         for(let [key, item] of forms.entries()) {
             promises.push(this.handleForm(key));
