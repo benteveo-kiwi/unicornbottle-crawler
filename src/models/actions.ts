@@ -170,10 +170,15 @@ export class ClickLinksAction extends Action {
 
         let nb = 0;
         for (let link of links) {
-            await Promise.all([
-                this.context.waitForEvent('page'),
-                link.click({force: true, button:"middle"})
-            ]);
+            try {
+                await Promise.all([
+                    this.context.waitForEvent('page'),
+                    link.click({force: true, button:"middle"})
+                ]);
+            } catch(e) {
+                logger.debug("Couldn't click a link, it was not visible maybe.");
+            }
+
             if(nb % 10 === 0 && nb != 0) {
                 logger.info(`Clicked ${nb} links.`);
             }
@@ -276,9 +281,19 @@ export class SubmitFormsAction extends Action {
      */
     async submitForm(form:ElementHandle) {
         let submitButton = await form.$("input[type=submit]")
+        let submitted = false;
+        // Try to click any submit buttons.
         if(submitButton) {
-            await submitButton.click({force:true});
-        } else {
+            try {
+                await submitButton.click({force:true});
+                submitted = true;
+            } catch(e) {
+                logger.debug("Couldn't click submit button, rude.");
+            }
+        } 
+
+        // Try to press enter.
+        if(!submitted) {
             let input = await form.$('input[type=text]');
             if(input) {
                 await input.press("Enter");
