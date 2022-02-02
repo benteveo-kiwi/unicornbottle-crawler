@@ -51,10 +51,11 @@ amqp.connect(connCreds, function(error0, connection) {
         //tcp6       0      0 :::8085                 :::*                    LISTEN      2162986/python
         //tcp6       0      0 :::8086                 :::*                    LISTEN      2163517/python
         let port:number = 8000 + randomInt(1, 6);
-        logger.info(`Using proxy on port ${port}`);
+        let proxy = 'unicornbottle-main:' + port;
+        logger.info(`Using proxy ${proxy}`);
         const browser = await chromium.launch({
             proxy: {
-                server: 'unicornbottle-main:' + port,
+                server: proxy,
                 bypass: "qowifoihqwfohifqwhoifwqhoifqw.com" // Don't bypass.
             }
         });
