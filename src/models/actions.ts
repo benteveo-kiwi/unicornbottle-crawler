@@ -66,7 +66,12 @@ export abstract class Action {
         this.context.setDefaultNavigationTimeout(8000);
 
         this.page = await this.context.newPage();
-        this.initialResponse = await this.page.goto(this.startUrl);
+        try {
+            this.initialResponse = await this.page.goto(this.startUrl);
+        } catch(e) {
+            logger.info("Request failed to load.");
+            return false;
+        }
 
         try {
             this.page.waitForLoadState('networkidle');
