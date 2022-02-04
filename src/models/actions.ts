@@ -63,7 +63,6 @@ export abstract class Action {
         }
 
         this.context = await this.browser.newContext(contextOptions);
-        this.context.setDefaultNavigationTimeout(8000);
 
         this.page = await this.context.newPage();
         try {
@@ -74,7 +73,7 @@ export abstract class Action {
         }
 
         try {
-            this.page.waitForLoadState('networkidle');
+            this.page.waitForLoadState('networkidle', {timeout: 10000});
         } catch(e) {
             logger.debug("Never reached netowrk idle, but that's OK.");
         }
