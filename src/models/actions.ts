@@ -68,7 +68,8 @@ export abstract class Action {
         try {
             this.initialResponse = await this.page.goto(this.startUrl);
         } catch(e) {
-            logger.info("Request failed to load.");
+            logger.error("Request failed to load.");
+            logger.error(e);
             return false;
         }
 
