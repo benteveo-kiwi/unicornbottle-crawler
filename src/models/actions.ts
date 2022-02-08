@@ -59,7 +59,9 @@ export abstract class Action {
             extraHTTPHeaders: {
                 "X-UB-GUID": target
             },
-            storageState: storageState
+            storageState: storageState,
+            ignoreHTTPSErrors: true,
+            acceptDownloads: false
         }
 
         this.context = await this.browser.newContext(contextOptions);
@@ -250,8 +252,14 @@ export class SubmitFormsAction extends Action {
 
         let forms = await newPage.$$("form");
         let form = forms[index];
-        await this.populateForm(form)
-        await this.submitForm(form)
+
+        try {
+            await this.populateForm(form);
+            await this.submitForm(form);
+        } catch(e) {
+            logger.error("Couldn't submit form...");
+            logger.error(e);
+        }
     }
 
     /**
