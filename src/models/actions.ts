@@ -1,7 +1,9 @@
 import type { Response, Route, Browser, BrowserContext, Page, ElementHandle } from 'playwright';
 import { getLogger } from "../logger";
 
+
 let logger = getLogger();
+const RESOURCE_EXCLUSTIONS = ['image', 'stylesheet', 'media', 'font','other'];
 
 /**
  * This abstract class represents an action that the browser will perform. It
@@ -59,7 +61,9 @@ export abstract class Action {
             extraHTTPHeaders: {
                 "X-UB-GUID": target
             },
-            storageState: storageState
+            storageState: storageState,
+            ignoreHTTPSErrors: true,
+            acceptDownloads: false
         }
 
         this.context = await this.browser.newContext(contextOptions);
@@ -95,6 +99,13 @@ export abstract class Action {
             let req = route.request()
             logger.debug(`Aborted navigation to logout url ${req.url()}`)
             route.abort();
+        });
+
+        // https://scrapingant.com/blog/block-requests-playwright
+        this.context.route('**/*', (route) => {
+            return RESOURCE_EXCLUSTIONS.includes(route.request().resourceType())
+                ? route.abort()
+                : route.continue()
         });
 
         if(this.initialResponse == null) { 
@@ -250,8 +261,14 @@ export class SubmitFormsAction extends Action {
 
         let forms = await newPage.$$("form");
         let form = forms[index];
-        await this.populateForm(form)
-        await this.submitForm(form)
+
+        try {
+            await this.populateForm(form);
+            await this.submitForm(form);
+        } catch(e) {
+            logger.error("Couldn't submit form...");
+            logger.error(e);
+        }
     }
 
     /**

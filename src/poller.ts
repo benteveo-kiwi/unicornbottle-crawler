@@ -53,7 +53,7 @@ amqp.connect(connCreds, function(error0, connection) {
         let port:number = 8080 + randomInt(1, 6);
         let proxy = 'http://unicornbottle-main:' + port;
         logger.info(`Using proxy ${proxy}`);
-        const browser = await chromium.launch({
+        let browser = await chromium.launch({
             proxy: {
                 server: proxy,
                 bypass: "qowifoihqwfohifqwhoifwqhoifqw.com" // Don't bypass.
@@ -75,6 +75,20 @@ amqp.connect(connCreds, function(error0, connection) {
             }
 
             logger.debug("Received crawl job, starting. Raw message: " + msg.content.toString());
+
+            if(!browser.isConnected()) {
+                logger.error("Browser was dead, restarting.");
+                try {
+                    await browser.close(); // Try and close it just in case.
+                } catch(e) {}
+
+                browser = await chromium.launch({
+                    proxy: {
+                        server: proxy,
+                        bypass: "qowifoihqwfohifqwhoifwqhoifqw.com" // Don't bypass.
+                    }
+                });
+            }
 
             let crawl_request: CrawlRequest = JSON.parse(msg.content.toString());
             await initCrawlJob(browser, crawl_request);
